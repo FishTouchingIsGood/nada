@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sth/StyleGAN-nada-quick-testing-streamlit-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sth/StyleGAN-nada-quick-testing-streamlit-app/restyle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sth/restyle" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sth_ori/StyleGAN-nada-quick-testing-streamlit-app" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/sth_ori/StyleGAN-nada-quick-testing-streamlit-app/restyle" vcs="Git" />
+  </component>
+</project>
