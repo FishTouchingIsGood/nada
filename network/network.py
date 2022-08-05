@@ -101,7 +101,7 @@ class Unet(nn.Module):
             nn.ReLU(),
             nn.ReflectionPad2d(4),
             nn.Conv2d(32, 3, kernel_size=(9, 9)),
-            nn.Tanh(),
+            nn.Tanh()
         )
         # 3 w h
 
