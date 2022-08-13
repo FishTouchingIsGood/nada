@@ -28,29 +28,33 @@ class Unet(nn.Module):
 
         # 3 w h
         preprocess = nn.Sequential(
-            nn.ReflectionPad2d(4),
-            nn.Conv2d(3, 32, kernel_size=(9, 9)),
+            # nn.ReflectionPad2d(4),
+            # nn.Conv2d(3, 32, kernel_size=(9, 9)),
+            nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
             nn.InstanceNorm2d(64),
             nn.ReLU()
         )
         # 32 w h
         conv1 = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2)),
+            # nn.ReflectionPad2d(1),
+            # nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2)),
+            nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(64),
             nn.ReLU()
         )
         # 64 w/2 h/2
         conv2 = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2)),
+            # nn.ReflectionPad2d(1),
+            # nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2)),
+            nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(128),
             nn.ReLU()
         )
         # 128 w/4 h/4
         conv3 = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2)),
+            # nn.ReflectionPad2d(1),
+            # nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2)),
+            nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(256),
             nn.ReLU()
         )
@@ -96,11 +100,13 @@ class Unet(nn.Module):
         )
 
         postprocess = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(32, 32, kernel_size=(3, 3)),
+            # nn.ReflectionPad2d(1),
+            # nn.Conv2d(32, 32, kernel_size=(3, 3)),
+            nn.Conv2d(32, 32, kernel_size=(3, 3), padding=1),
             nn.ReLU(),
-            nn.ReflectionPad2d(4),
-            nn.Conv2d(32, 3, kernel_size=(9, 9)),
+            # nn.ReflectionPad2d(4),
+            # nn.Conv2d(32, 3, kernel_size=(9, 9)),
+            nn.Conv2d(32, 3, kernel_size=(9, 9),padding=4),
             nn.Tanh()
         )
         # 3 w h

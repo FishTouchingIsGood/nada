@@ -37,23 +37,38 @@ class CLIPLoss(torch.nn.Module):
 
         self.device = device
         self.model, clip_preprocess = clip.load(clip_model, device=self.device)
+        for x in self.model.parameters():
+            x.requires_grad = False
+
 
         self.clip_preprocess = clip_preprocess
 
         self.preprocess = transforms.Compose(
             [
-                transforms.Normalize(mean=(-1.0, -1.0, -1.0), std=(2.0, 2.0, 2.0)),
-                # transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+                # transforms.Normalize(mean=(-1.0, -1.0, -1.0), std=(2.0, 2.0, 2.0)),
+                transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
             ]
         )
 
+        # self.preprocess = transforms.Compose(
+        #     [
+        #         # transforms.Normalize(mean=(-1.0, -1.0, -1.0), std=(2.0, 2.0, 2.0)),
+        #         # transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+        #         transforms.ToPILImage()
+        #     ] +
+        #     clip_preprocess.transforms
+        # )
+
+        self.texture_loss = torch.nn.MSELoss()
+        self.angle_loss = torch.nn.L1Loss()
 
         self.direction_loss = DirectionLoss(direction_loss_type)
 
         self.target_direction = None
+        self.src_text_features = None
 
     def tokenize(self, strings):
-        return clip.tokenize(strings).to(self.device)
+        return clip.tokenize(strings)#.to(self.device)
 
     def encode_text(self, tokens):
         return self.model.encode_text(tokens)
@@ -106,20 +121,68 @@ class CLIPLoss(torch.nn.Module):
 
         edit_direction = (target_encoding - src_encoding)
         if edit_direction.sum().item() == 0:
-            target_encoding = self.get_image_features(target_img + 1e-3)
+            target_encoding = self.get_image_features(target_img + 1e-6)
             edit_direction = (target_encoding - src_encoding)
 
         edit_direction /= (edit_direction.clone().norm(dim=-1, keepdim=True))
 
         return self.direction_loss(edit_direction, self.target_direction).mean()
 
+
+
+
+    def global_clip_loss(self, img: torch.Tensor, text) -> torch.Tensor:
+
+        tokens = clip.tokenize(text).to(self.device)
+
+        image = self.preprocess(img.squeeze(0).cpu())
+        image = image.to(self.device).unsqueeze(0)
+        logits_per_image, _ = self.model(image, tokens)
+
+        return (1. - logits_per_image / 100).mean()
+
+
+
+################################################################
+
+    def set_text_features(self, source_class: str, target_class: str) -> None:
+        source_features = self.get_text_features(source_class).mean(axis=0, keepdim=True)
+        self.src_text_features = source_features / source_features.norm(dim=-1, keepdim=True)
+
+        target_features = self.get_text_features(target_class).mean(axis=0, keepdim=True)
+        self.target_text_features = target_features / target_features.norm(dim=-1, keepdim=True)
+
+    # todo
+    def clip_angle_loss(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str) -> torch.Tensor:
+        if self.src_text_features is None:
+            self.set_text_features(source_class, target_class)
+
+        cos_text_angle = self.target_text_features @ self.src_text_features.T
+        text_angle = torch.acos(cos_text_angle)
+
+        src_img_features = self.get_image_features(src_img).unsqueeze(2)
+        target_img_features = self.get_image_features(target_img).unsqueeze(1)
+
+        cos_img_angle = torch.clamp(target_img_features @ src_img_features, min=-1.0, max=1.0)
+        img_angle = torch.acos(cos_img_angle)
+
+        text_angle = text_angle.unsqueeze(0).repeat(img_angle.size()[0], 1, 1)
+        cos_text_angle = cos_text_angle.unsqueeze(0).repeat(img_angle.size()[0], 1, 1)
+
+        return self.angle_loss(cos_img_angle, cos_text_angle)
+################################################################
+
+
+
     def forward(self, src_img: torch.Tensor, source_class: str, target_img: torch.Tensor, target_class: str):
-        clip_loss = 0.0
+        loss = 0.0
 
-        # if self.lambda_direction != 0:
-        #     clip_loss += self.lambda_direction * self.clip_directional_loss(src_img, source_class, target_img,
-        #                                                                     target_class)
-        clip_loss += self.clip_directional_loss(src_img, source_class, target_img,
-                                                                            target_class)
 
-        return clip_loss
+        loss += 0.01 * self.clip_directional_loss(src_img, source_class, target_img, target_class)
+        loss += 0.1 * self.global_clip_loss(target_img, f"a {target_class}")
+        # loss += 1 * self.texture_loss(src_img, target_img)
+        # loss += 1 * self.clip_angle_loss(src_img, source_class, target_img, target_class)
+        # print(loss1.item(),loss2.item(),loss3.item(),loss4.item())
+        # loss += loss1 + loss2 + loss3 + loss4
+        # loss.requires_grad = True
+        return loss
