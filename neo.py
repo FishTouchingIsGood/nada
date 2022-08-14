@@ -56,10 +56,10 @@ pil = transforms.Resize(size=(224, 224), interpolation=Image.BICUBIC)(pil)
 pic = topic(pil).unsqueeze(0).to(device)
 pic.requires_grad = False
 
-source = "photo"
-target = "sketch"
+source = "baby"
+target = "old"
 
-train(500, 100, pic, source, target)
+train(500, 200, pic, source, target)
 
 
 

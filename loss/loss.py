@@ -68,7 +68,7 @@ class CLIPLoss(torch.nn.Module):
         self.src_text_features = None
 
     def tokenize(self, strings):
-        return clip.tokenize(strings)#.to(self.device)
+        return clip.tokenize(strings).to(self.device)
 
     def encode_text(self, tokens):
         return self.model.encode_text(tokens)
@@ -178,10 +178,9 @@ class CLIPLoss(torch.nn.Module):
         loss = 0.0
 
 
-        loss += 0.01 * self.clip_directional_loss(src_img, source_class, target_img, target_class)
-        loss += 0.1 * self.global_clip_loss(target_img, f"a {target_class}")
-        # loss += 1 * self.texture_loss(src_img, target_img)
-        # loss += 1 * self.clip_angle_loss(src_img, source_class, target_img, target_class)
+        loss += 1 * self.clip_directional_loss(src_img, source_class, target_img, target_class)
+        # loss += 0.01 * self.global_clip_loss(target_img, f"a {target_class}")
+        # loss += 0.01 * self.clip_angle_loss(src_img, source_class, target_img, target_class)
         # print(loss1.item(),loss2.item(),loss3.item(),loss4.item())
         # loss += loss1 + loss2 + loss3 + loss4
         # loss.requires_grad = True

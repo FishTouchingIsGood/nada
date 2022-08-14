@@ -18,3 +18,13 @@ src = torch.randn(1,3,224,224).to(device)
 tar = torch.randn(1,3,224,224).to(device)
 x = loss(src,"good",tar,"bad")
 print(x,x.shape)
+
+import time
+start = time.time()
+time.sleep(3)
+end = time.time()
+usetime = start - end
+print(f"usetime: {usetime}" )
+
+import clip
+print(clip.available_models())
