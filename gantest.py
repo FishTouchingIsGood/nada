@@ -63,7 +63,7 @@ pic.requires_grad = False
 lr1 = 0.001
 lr2 = 0.00002
 source = "sketch"
-target = "HQ photo"
+target = "black and white photo"
 iteration1 = 1000
 iteration2 = 100
 
