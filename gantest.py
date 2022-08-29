@@ -19,7 +19,7 @@ topic = transforms.ToTensor()
 
 
 def train(iteration1, iteration2, lr1, lr2, pic, source, target):
-    input = torch.ones(1, 512, 7, 7).to(device) * 0.5
+    input = torch.ones(1, 256, 7, 7).to(device) * 0.5
     style = cliploss1.encode_images(pic).float().to(device) * 0.5 \
             + cliploss2.encode_images(pic).float().to(device) * 0.5
 
@@ -32,8 +32,8 @@ def train(iteration1, iteration2, lr1, lr2, pic, source, target):
         opt1.step()
         pil = topil(neo_pic.squeeze(0).cpu())
         print("iter:", i + 1, "loss:", loss.item())
-        if ((i + 1) % 100) == 0:
-            pil.save(f"./pic1/{(i + 1) // 100}.jpg")
+        if ((i + 1) % 50) == 0:
+            pil.save(f"./pic1/{(i + 1) // 50}.jpg")
     torch.save(model, 'net.pth')
 
     # model = torch.load('net.pth')
@@ -47,8 +47,8 @@ def train(iteration1, iteration2, lr1, lr2, pic, source, target):
         opt2.step()
         pil = topil(neo_pic.squeeze(0).cpu())
         print("iter:", i + 1, "loss:", loss.item())
-        if ((i + 1) % 100) == 0:
-            pil.save(f"./pic2/{(i + 1) // 100}.jpg")
+        if ((i + 1) % 50) == 0:
+            pil.save(f"./pic2/{(i + 1) // 50}.jpg")
 
     neo_pic = model(input, style)
     pil = topil(neo_pic.squeeze(0).cpu())
@@ -63,9 +63,9 @@ pic.requires_grad = False
 lr1 = 0.001
 lr2 = 0.00002
 source = "sketch"
-target = "black and white photo"
-iteration1 = 1000
-iteration2 = 100
+target = "photo"
+iteration1 = 500
+iteration2 = 250
 
 start = time.time()
 train(iteration1, iteration2, lr1, lr2, pic, source, target)
