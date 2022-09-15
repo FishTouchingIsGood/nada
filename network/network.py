@@ -6,13 +6,13 @@ class ResBlock(nn.Module):
     def __init__(self, channel):
         super().__init__()
         block = nn.Sequential(
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(channel, channel, kernel_size=(3, 3)),
+            # nn.ReflectionPad2d(1),
+            nn.Conv2d(channel, channel, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(channel),
             nn.ReLU(),
 
-            nn.ReflectionPad2d(1),
-            nn.Conv2d(channel, channel, kernel_size=(3, 3)),
+            # nn.ReflectionPad2d(1),
+            nn.Conv2d(channel, channel, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(channel),
             nn.ReLU(),
         )
@@ -31,8 +31,9 @@ class Unet(nn.Module):
             # nn.ReflectionPad2d(4),
             # nn.Conv2d(3, 32, kernel_size=(9, 9)),
             nn.Conv2d(3, 32, kernel_size=(9, 9), padding=4),
-            nn.InstanceNorm2d(64),
-            nn.ReLU()
+            nn.InstanceNorm2d(32),
+            nn.ReLU(),
+            ResBlock(32),
         )
         # 32 w h
         conv1 = nn.Sequential(
@@ -40,7 +41,8 @@ class Unet(nn.Module):
             # nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2)),
             nn.Conv2d(32, 64, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(64),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(64),
         )
         # 64 w/2 h/2
         conv2 = nn.Sequential(
@@ -48,7 +50,8 @@ class Unet(nn.Module):
             # nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2)),
             nn.Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(128),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(128),
         )
         # 128 w/4 h/4
         conv3 = nn.Sequential(
@@ -56,59 +59,91 @@ class Unet(nn.Module):
             # nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2)),
             nn.Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=1),
             nn.InstanceNorm2d(256),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(256),
         )
         # 256 w/8 h/8
+        conv4 = nn.Sequential(
+            # nn.ReflectionPad2d(1),
+            # nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2)),
+            nn.Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=1),
+            nn.InstanceNorm2d(512),
+            nn.ReLU(),
+            ResBlock(512),
+        )
+        # 512 w/16 h/16
 
-        res = nn.Sequential(*[ResBlock(256) for _ in range(4)])
-        # 256 w/8 h/8
+
+        res = nn.Sequential(*[ResBlock(512) for _ in range(8)])
+        # 512 w/16 h/16
+
+        upsample4 = nn.Sequential(
+            nn.ConvTranspose2d(512, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1)),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(),
+            ResBlock(256),
+        )
 
         upsample3 = nn.Sequential(
             nn.ConvTranspose2d(256, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1)),
-            nn.InstanceNorm2d(256),
-            nn.ReLU()
+            nn.InstanceNorm2d(128),
+            nn.ReLU(),
+            ResBlock(128),
         )
 
         upsample2 = nn.Sequential(
             nn.ConvTranspose2d(128, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1)),
-            nn.InstanceNorm2d(128),
-            nn.ReLU()
+            nn.InstanceNorm2d(64),
+            nn.ReLU(),
+            ResBlock(64),
         )
 
         upsample1 = nn.Sequential(
             nn.ConvTranspose2d(64, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), output_padding=(1, 1)),
             nn.InstanceNorm2d(32),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(32),
+        )
+
+        deconv4 = nn.Sequential(
+            nn.Conv2d(512, 256, kernel_size=(3, 3), padding=(1, 1)),
+            nn.InstanceNorm2d(256),
+            nn.ReLU(),
+            ResBlock(256),
         )
 
         deconv3 = nn.Sequential(
             nn.Conv2d(256, 128, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(128),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(128),
         )
 
         deconv2 = nn.Sequential(
             nn.Conv2d(128, 64, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(64),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(64),
         )
 
         deconv1 = nn.Sequential(
             nn.Conv2d(64, 32, kernel_size=(3, 3), padding=(1, 1)),
             nn.InstanceNorm2d(32),
-            nn.ReLU()
+            nn.ReLU(),
+            ResBlock(32),
         )
 
         postprocess = nn.Sequential(
-            # nn.ReflectionPad2d(1),
-            # nn.Conv2d(32, 32, kernel_size=(3, 3)),
-            nn.Conv2d(32, 32, kernel_size=(3, 3), padding=1),
-            nn.ReLU(),
-            # nn.ReflectionPad2d(4),
-            # nn.Conv2d(32, 3, kernel_size=(9, 9)),
-            nn.Conv2d(32, 3, kernel_size=(9, 9),padding=4),
+            nn.Conv2d(32, 3, kernel_size=(3, 3), padding=1),
+            # nn.ReLU(),
+            # nn.Conv2d(32, 3, kernel_size=(9, 9),padding=4),
+            # nn.ReLU(),
+            # nn.AdaptiveAvgPool2d((224, 224)),
             nn.Tanh()
+
+
         )
+
         # 3 w h
 
         self.device = device
@@ -116,13 +151,16 @@ class Unet(nn.Module):
         self.conv1 = conv1.to(device)
         self.conv2 = conv2.to(device)
         self.conv3 = conv3.to(device)
+        self.conv4 = conv4.to(device)
         self.res = res.to(device)
         self.deconv1 = deconv1.to(device)
         self.deconv2 = deconv2.to(device)
         self.deconv3 = deconv3.to(device)
+        self.deconv4 = deconv4.to(device)
         self.upsample1 = upsample1.to(device)
         self.upsample2 = upsample2.to(device)
         self.upsample3 = upsample3.to(device)
+        self.upsample4 = upsample4.to(device)
         self.postprocess = postprocess.to(device)
 
     def forward(self, input):
@@ -133,8 +171,13 @@ class Unet(nn.Module):
         l2 = self.conv1(l1)
         l3 = self.conv2(l2)
         l4 = self.conv3(l3)
+        l5 = self.conv4(l4)
 
-        r4 = self.res(l4)
+
+        r5 = self.res(l5)
+        r4p = self.upsample4(r5)
+        r4f = torch.cat([l4, r4p], dim=1)
+        r4 = self.deconv4(r4f)
         r3p = self.upsample3(r4)
         r3f = torch.cat([l3, r3p], dim=1)
         r3 = self.deconv3(r3f)
@@ -146,6 +189,8 @@ class Unet(nn.Module):
         r1 = self.deconv1(r1f)
 
         output = self.postprocess(r1)
+        # output = torch.nn.functional.interpolate(output, size=(224,224), mode='bilinear')
+
 
         return output
 
